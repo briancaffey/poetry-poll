@@ -52,7 +52,7 @@ function checkword(word){
     return true
   }
 }
-var suggested_words = {}
+var suggested_words = {' ': 1}
 var connections = 0;
 io.on('connection', (socket) => {
   load_recent();
@@ -65,8 +65,9 @@ io.on('connection', (socket) => {
 
 
   socket.on('word_suggestion', function(word){
+    console.log(suggested_words);
     if (_.contains(bad_words, word)) return
-    if (Object.values(suggested_words).reduce(getSum) < 10){
+    if (_.values(suggested_words).reduce(getSum) < 10){
       if (suggested_words.hasOwnProperty(word)){
         suggested_words[word] += 1;
       } else {
