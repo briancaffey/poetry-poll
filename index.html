@@ -12,8 +12,10 @@
 		<h1>poetry.io</h1>
 		<p style="font-size:2em;" id="word-stream"></p>
 		<hr>
+		<small>total votes:<span id="total-votes"></span></small>
 		<div id="current_suggestions"></div>
 		<hr>
+
 		<form id="form" id="chat_form">
 		<div class="input-group">
 			<input type="text" id="word_suggestion" class="form-control" placeholder="propose a word...">
@@ -22,6 +24,10 @@
 			</span>
 		</div>
 	</form>
+	<hr>
+	<div id="poll"></div>
+
+
 
 	<script src="/socket.io/socket.io.js"></script>
 
@@ -47,11 +53,27 @@
 				$("#connection-count").text(String(count));
 			});
 
-			socket.on('populate_suggestions', function(current_suggestions){
+			socket.on('populate_suggestions', function(populate){
 				$("#current_suggestions").empty();
-				for (var word in current_suggestions){
+				var total_votes = populate.total_votes
+				$("#total-votes").text(String(populate.total_votes));
+				$("#poll").empty();
+				for (var word in Object.keys(populate.suggested_words)){
 
-					$("#current_suggestions").append("<button class='btn btn-default'>" + current_suggestions[word] + "</button>");
+					var percentage = parseFloat(Object.values(populate.suggested_words)[word]) / parseFloat(total_votes) * 100;
+					var option = Object.keys(populate.suggested_words)[word];
+					console.log(option);
+					console.log("%", percentage);
+					$("#poll").append(
+						"<div class='progress'>\
+								<div class='progress-bar progress-bar-success'\
+							   role='progressbar' aria-valuenow='' aria-valuemin='0'\
+								  aria-valuemax='100' style='width:" + percentage + "%;'>" + option + " \
+								</div>\
+						 </div>\
+						"
+					)
+					$("#current_suggestions").append("<button class='btn btn-default'>" + Object.keys(populate.suggested_words)[word] + "</button>");
 				}
 			});
 
@@ -61,11 +83,18 @@
 				$("#word-stream").text(words)
 			});
 
+			socket.on('show_recent', function(recent){
+				console.log('here are recent', recent)
+				var string = "";
+				for (w in recent){
+					string = string + " " + recent[w].content.winner;
+				}
+
+				$("#word-stream").text(string)
+			})
 
 			$('form').submit(function(e){
-				console.log('starting');
 				e.preventDefault();
-				console.log('prevent d');
 				var word = $('#word_suggestion').val();
 				console.log(word);
 				$("#word_suggestion").val("");

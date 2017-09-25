@@ -4,22 +4,47 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var _ = require('underscore');
+var mongo = require('mongodb').MongoClient;
 
 const PORT = process.env.PORT || 3000;
+const MONGO = process.env.MONGO
 const INDEX = path.join(__dirname, 'index.html');
-
-// const server = express()
-//   .use((req, res) => res.sendFile(INDEX) )
-//   .use(express.static(__dirname + '/node_modules'))
-//   .listen(PORT, () => console.log(`Listening on ${ PORT }`));
 
 app.use(express.static(__dirname + '/node_modules'));
 app.get('/', function(req, res,next){
   res.sendFile(__dirname + '/index.html');
 });
 
+function load_recent(){
+  mongo.connect(MONGO, function(err, db){
+    var collection = db.collection('words').find().toArray(function( err, result){
+      if (err) {
+        console.log(err);
+        throw err;
+      }
+      io.emit('show_recent', result);
+    });
+    //stream.on('data', function(recent){io.emit('show_recent', recent)});
+  })
+}
 
+
+function save_db(wrd){
+  mongo.connect(MONGO, function (err, db) {
+      var collection = db.collection('words');
+      collection.insert({ content: wrd }, function(err, o) {
+          if (err) { console.warn(err.message); }
+          else { console.log("word data inserted into db"); }
+      });
+  });
+}
+var word_data
 var bad_words = ['', 'fuck']
+
+function getSum(total, num){
+  return total + num;
+}
+
 function checkword(word){
   if (_.contains(bad_words, word)){
     return false
@@ -27,32 +52,40 @@ function checkword(word){
     return true
   }
 }
-var suggested_words = []
+var suggested_words = {}
 var connections = 0;
 io.on('connection', (socket) => {
+  load_recent();
   connections++;
   io.emit('add', connections);
-  console.log('Client connected');
   socket.on('disconnect', function() {
     connections--;
     io.emit('remove', connections);
-    console.log('Client disconnected')
   });
 
 
   socket.on('word_suggestion', function(word){
-    if (suggested_words.length < 10 && checkword(word)==true){
-      suggested_words.push(word);
-      io.emit('populate_suggestions', suggested_words);
-      if (suggested_words.length==10){
-        io.emit('add_result', mode(suggested_words));
-        suggested_words = [];
-        io.emit('populate_suggestions', suggested_words);
+    if (_.contains(bad_words, word)) return
+    if (Object.values(suggested_words).reduce(getSum) < 10){
+      if (suggested_words.hasOwnProperty(word)){
+        suggested_words[word] += 1;
+      } else {
+        suggested_words[word] = 1;
+      };
+
+      var total_votes = Object.values(suggested_words).reduce(getSum);
+      var populate = {'total_votes':total_votes, 'suggested_words':suggested_words};
+      io.emit('populate_suggestions', populate);
+      if (populate.total_votes == 10){
+        var winner = Object.keys(suggested_words).reduce(function(a, b){ return suggested_words[a] > suggested_words[b] ? a : b });
+        load_recent();
+        var doc = {'words':suggested_words, 'winner':winner};
+        save_db(doc);
+        suggested_words = {};
+        io.emit('populate_suggestions', populate);
         return;
       }
-      console.log(suggested_words);
     }
-
   });
 });
 
@@ -78,6 +111,5 @@ function mode(array)
     return maxEl;
 }
 
-setInterval(() => io.emit('time', new Date().toTimeString()), 1000);
 
 server.listen(PORT);

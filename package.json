@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start":"node app.js", 
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -15,5 +16,8 @@
     "mongodb": "^2.2.31",
     "socket.io": "^2.0.3",
     "underscore": "^1.8.3"
+  }, 
+  "engines":{
+    "node":"6.11.1"
   }
 }
