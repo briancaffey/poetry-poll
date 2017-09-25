@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!---CDN Links-->
+<script src="/jquery/dist/jquery.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	</head>
+
+	<body>
+		<div class="container">
+		<h1>poetry.io</h1>
+		<p style="font-size:2em;" id="word-stream"></p>
+		<hr>
+		<div id="current_suggestions"></div>
+		<hr>
+		<form id="form" id="chat_form">
+		<div class="input-group">
+			<input type="text" id="word_suggestion" class="form-control" placeholder="propose a word...">
+			<span class="input-group-btn">
+				<button class="btn btn-secondary" type="submit">Submit</button>
+			</span>
+		</div>
+	</form>
+
+	<script src="/socket.io/socket.io.js"></script>
+
+
+	<br />
+	<p>Connection count: <span id="connection-count"></span></p>
+
+		<hr>
+
+
+	</div>
+	</body>
+</html>
+
+    <script>
+      var socket = io();
+
+			socket.on('add', function(count){
+				$("#connection-count").text(String(count));
+			});
+
+			socket.on('remove', function(count){
+				$("#connection-count").text(String(count));
+			});
+
+			socket.on('populate_suggestions', function(current_suggestions){
+				$("#current_suggestions").empty();
+				for (var word in current_suggestions){
+
+					$("#current_suggestions").append("<button class='btn btn-default'>" + current_suggestions[word] + "</button>");
+				}
+			});
+
+			socket.on('add_result', function(w){
+				var words = $("#word-stream").text();
+				words = words + " " + w
+				$("#word-stream").text(words)
+			});
+
+
+			$('form').submit(function(e){
+				console.log('starting');
+				e.preventDefault();
+				console.log('prevent d');
+				var word = $('#word_suggestion').val();
+				console.log(word);
+				$("#word_suggestion").val("");
+				socket.emit('word_suggestion', word);
+				});
+    </script>
