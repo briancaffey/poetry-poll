@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
         suggested_words[word] = 1;
       };
 
-      var total_votes = Object.values(suggested_words).reduce(getSum);
+      var total_votes = _.values(suggested_words).reduce(getSum);
       var populate = {'total_votes':total_votes, 'suggested_words':suggested_words};
       io.emit('populate_suggestions', populate);
       if (populate.total_votes == 10){
@@ -82,7 +82,7 @@ io.on('connection', (socket) => {
         load_recent();
         var doc = {'words':suggested_words, 'winner':winner};
         save_db(doc);
-        suggested_words = {};
+        suggested_words = {' ':1};
         io.emit('populate_suggestions', populate);
         return;
       }
