@@ -7,7 +7,6 @@ var _ = require('underscore');
 var mongo = require('mongodb').MongoClient;
 
 
-
 const PORT = process.env.PORT || 3000;
 const MONGO = process.env.MONGO
 const INDEX = path.join(__dirname, 'index.html');
@@ -24,14 +23,13 @@ app.get('/about', function(req, res){
 
 function load_recent(){
   mongo.connect(MONGO, function(err, db){
-    var collection = db.collection('words').find().sort({ _id: -1}).toArray(function( err, result){
+    var collection = db.collection('words').find().sort({ _id: 1}).toArray(function( err, result){
       if (err) {
         console.log(err);
         throw err;
       }
       io.emit('show_recent', result);
     });
-    //stream.on('data', function(recent){io.emit('show_recent', recent)});
   })
 }
 
@@ -88,7 +86,7 @@ io.on('connection', (socket) => {
         var winner = Object.keys(suggested_words).reduce(function(a, b){ return suggested_words[a] > suggested_words[b] ? a : b });
         load_recent();
         
-        var doc = {'words':suggested_words, 'winner':winner, 'time_stamp': time_stamp};
+        var doc = {'words':suggested_words, 'winner':winner, 'time_stamp': Date.now()};
         save_db(doc);
         suggested_words = {' ':1};
         io.emit('populate_suggestions', populate);

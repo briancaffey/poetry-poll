@@ -58,13 +58,18 @@
 
 			socket.on('populate_suggestions', function(populate){
 				$("#current_suggestions").empty();
-				var total_votes = populate.total_votes
+				var total_votes = populate.total_votes - 1;
 				$("#total-votes").text(String(populate.total_votes));
 				$("#poll").empty();
 				for (var word in Object.keys(populate.suggested_words)){
-
-					var percentage = parseFloat(Object.values(populate.suggested_words)[word]) / parseFloat(total_votes) * 100;
 					var option = Object.keys(populate.suggested_words)[word];
+					if ( option == ' ') {
+						continue;
+						
+					}
+					console.log("the word is", option)
+					var percentage = parseFloat(Object.values(populate.suggested_words)[word]) / parseFloat(total_votes) * 100;
+					
 					console.log(option);
 					console.log("%", percentage);
 					$("#poll").append(
@@ -98,7 +103,7 @@
 
 			$('form').submit(function(e){
 				e.preventDefault();
-				var word = $('#word_suggestion').val();
+				var word = $('#word_suggestion').val().trim();
 				console.log(word);
 				$("#word_suggestion").val("");
 				socket.emit('word_suggestion', word);
